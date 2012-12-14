@@ -1,0 +1,7 @@
+# ignore book files
+downloads/*
+processed/*
+features/*
+
+# ignore compiled files
+*.pyc
