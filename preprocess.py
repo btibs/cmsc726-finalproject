@@ -3,16 +3,14 @@
 import re
 import os
 
+from projsettings import *
+
 '''
 Items to remove:
 gutenberg disclaimer
 table of contents
 
 '''
-
-ORIG_DIR = "downloads"
-PROC_DIR = "processed"
-FEAT_DIR = "features"
 
 def processTexts():
     booknames = [d[2] for d in os.walk(ORIG_DIR)][0] # could be better but this should work
