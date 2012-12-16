@@ -75,7 +75,7 @@ def processChaucer():
             lastLineBlank = False
             
         # skip footnotes
-        if line.startswith("Notes to the ") or fnre.match(line) is not None:
+        if line.lower().startswith("notes to ") or fnre.match(line) is not None:
             inFootnotes = True
         if inFootnotes:
             continue
