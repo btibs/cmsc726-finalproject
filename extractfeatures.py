@@ -6,11 +6,14 @@ from projsettings import *
 import re
 
 def extractAll():
-    r = '[' + '|'.join(BookInfo.punct) + "]|\w+"
+    r = '[' + '|'.join(BookInfo.punct) + ']|\w+'
+    r = r.replace('(', '\(').replace(')', '\)').replace('-', '\-')  # escape regex characters TODO do this the not-dumb way
+    
     wordsplit = re.compile(r)
     
     booknames = [d[2] for d in os.walk(PROC_DIR)][0] # could be better but this should work
     for bookname in booknames:
+        print "processing",bookname,"...",
         auth, title = bookname.split(" - ")
         inf = BookInfo(auth, title)
         
@@ -33,7 +36,7 @@ def extractAll():
                 
                 # put words into vocabulary
                 for i, wd in enumerate(words):
-                    if wd in punct:
+                    if wd in BookInfo.punct:
                         inf.punctuation[wd] += 1
                         
                         # check if punctuation signifies end of something
@@ -58,14 +61,14 @@ def extractAll():
                         
                         elif wd in BookInfo.separators['phrase']:
                             # ignore possessive "'s"
-                            if wd == "'" and and i<len(words) and words[i+1] == 's':
+                            if wd == "'" and i<len(words)-1 and words[i+1] == 's':
                                 pass
                             else:
                                 inf.update('phrase', flens['phrase'])
                                 flens['phrase'] = 0
                     
                     else:   # is an actual word
-                        inf.vocabulary[wd] += 1
+                        inf.vocabulary[wd] += 1 # what.
                         
                         # increment word count
                         # ignore if possessive "'s"
@@ -83,9 +86,11 @@ def extractAll():
         procfile.close()
         
         # write book info to file
+        print "writing to file ...",
         featfile = file(os.path.join(FEAT_DIR, bookname), 'w')
-        pickle.dump(featfile)
+        pickle.dump(inf, featfile)
         featfile.close()
+        print "done."
 
 # command line
 if __name__ == "__main__":

@@ -38,7 +38,7 @@ class BookInfo():
                             'word_len': [],
                             'phrase_len': [],
                         }
-        self.punctuation = dict(zip(punct, [0 for i in punct]))
+        self.punctuation = dict(zip(BookInfo.punct, [0 for i in BookInfo.punct]))
         self.vocabulary = BookStats()
     
     def update(self, feat, flen):
@@ -48,5 +48,5 @@ class BookInfo():
 class BookStats(dict):
     # return 0 if key not in dictionary; else value
     def __getitem__(self, idx):
-        self.setdefault(idx, [])
+        self.setdefault(idx, 0)
         return dict.__getitem__(self, idx)
