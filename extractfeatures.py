@@ -87,8 +87,8 @@ def extractAll():
         
         # write book info to file
         print "writing to file ...",
-        featfile = file(os.path.join(FEAT_DIR, bookname), 'w')
-        pickle.dump(inf, featfile)
+        featfile = file(os.path.join(FEAT_DIR, bookname), 'wb')
+        pickle.dump(inf, featfile, pickle.HIGHEST_PROTOCOL)
         featfile.close()
         print "done."
 
