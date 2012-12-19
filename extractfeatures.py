@@ -46,7 +46,7 @@ def extractAll():
                                 # TODO make better (things like i.e., e.g. ignored; if at end of sentence is messed up)
                                 abbr = False
                                 if i > 0:
-                                    if words[i-1] in ['Mr', 'Mrs', 'Dr', 'Ms', 'etc', 'et', 'al']:
+                                    if words[i-1].lower() in ['mr', 'mrs', 'dr', 'ms', 'etc', 'et', 'al']:
                                         abbr = True
                                 if abbr:
                                     pass
@@ -68,7 +68,7 @@ def extractAll():
                                 flens['phrase'] = 0
                     
                     else:   # is an actual word
-                        inf.vocabulary[wd] += 1 # what.
+                        inf.vocabulary[wd.lower()] += 1
                         
                         # increment word count
                         # ignore if possessive "'s"

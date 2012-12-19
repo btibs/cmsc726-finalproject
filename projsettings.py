@@ -50,3 +50,8 @@ class BookStats(dict):
     def __getitem__(self, idx):
         self.setdefault(idx, 0)
         return dict.__getitem__(self, idx)
+    
+    # add another counter to this one - union the lists
+    def add(self, y):
+        for key, value in y.items():
+            self[key] += value
