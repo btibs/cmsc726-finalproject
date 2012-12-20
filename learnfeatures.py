@@ -3,6 +3,7 @@
 from projsettings import *
 import cPickle as pickle
 import os
+import random
 
 # we are doing kmeans stuff
 
@@ -40,17 +41,20 @@ class AveragedPerceptron:
                 #activation = sum_over_features( w[d], x[d] ) + b
                 activation = sum + b
                 if y * activation <= 0: # prediction was wrong, update weight vectors
-                    w = w + y * x
-                    b = b + y
-                    u = u + y * c * x
-                    B = B + y * c
+                    for i in range(len(x)):
+                        w[i] = w[i] + y * x[i]      # update weights
+                        u[i] = u[i] + y * c * x[i]  # update cached weights
+                    b = b + y                       # update bias
+                    B = B + y * c                   # update cached bias    
             c += 1
         
         # return w - u/c
-        finalw = []
+        finalw = [0 for i in w]
         for i in range(len(w)):
-            w[i] -= u[i] / float(c)
+            finalw[i] -= u[i] / float(c)
         finalb = b - B / float(c)
+        self.weights = finalw
+        self.bias = finalb
         return (finalw, finalb)
 
 class Classifier:
@@ -61,10 +65,6 @@ class Classifier:
         self.books = {"train":[], "test":[]}
         self.data = {"train":[], "test":[]}          # holds data to pass to perceptron
         self.classifiers = {}   # holds classifiers
-        
-    def printstats(self):
-        # print some pretty stats or something here?
-        print "stats"
         
     def supervisedLearn(self):
         # using author info for labeled examples
@@ -84,24 +84,75 @@ class Classifier:
                 alldata.append( [ data, isauth ] )
             
             self.classifiers[a].train(alldata, maxIter)
+            print "\nbias:",self.classifiers[a].bias,"weights:",self.classifiers[a].weights[:10],
+            print "maxw:",max(self.classifiers[a].weights),"minw:",min(self.classifiers[a].weights)
             if VERBOSE: print "done."
             
         # print to file
-        if VERBOSE: print "pickling to file..."
+        if VERBOSE: print "pickling to file...",
         f = file("classifierpickle.txt", "wb")
         pickle.dump(self.classifiers, f)
         f.close()
         if VERBOSE: print "done."
 
-    def unsupervisedLearn(self):
-        # TODO: k-means clustering ?
-        if VERBOSE: print "Unsupervised learning"
-
-    def classify(self, inputTxt):
-        if VERBOSE: print "classifying"
-
-        # OVA
-        # AVA
+    def testOVA(self):
+        if VERBOSE: print "testing OVA\n",self.classifiers.keys()
+        # test input on each classifier, the positive one wins (ties broken randomly)
+        results = []
+        for i, x in enumerate(self.data['test']):
+            if VERBOSE: print "testing for author",self.authors['test'][i],"-",self.books['test'][i]
+            acts = []
+            scores = []
+            for k,c in self.classifiers.iteritems():
+                # compute activation for this data with this classifier
+                #activation = sum_over_features( w[d], x[d] ) + b
+                sum = 0
+                for i in range(len(x)):
+                    sum += c.weights[i] + x[i]
+                activation = sum + c.bias
+                acts.append(activation)
+                scores.append(activation >= 0)
+            if VERBOSE:
+                #print "activations:",acts,"\nscores:",scores
+                print "author".ljust(25),"activation\tscore"
+                s = zip(self.classifiers.keys(),acts,scores)
+                s.sort(key=lambda k:k[1])   # sort on activations
+                for (a,ac,sc) in s:
+                    print a.ljust(25),ac,"\t",sc
+            
+            # find positive examples
+            positives = [i for (i,v) in enumerate(scores) if v==True]
+            if len(positives) == 0:
+                if VERBOSE: print "no positives found!"
+                # pick one with highest activation?
+                idx = acts.index(max(acts))
+                results.append(self.classifiers.keys()[positives[idx]])
+            elif len(positives) == 1:
+                if VERBOSE: print "success: one classification found"
+                results.append(self.classifiers.keys()[positives[0]])
+            else:
+                if VERBOSE: print "multiple classifications found, choosing random"#highest activation"
+                idx = random.randint(0,len(positives)-1)
+                results.append(self.classifiers.keys()[positives[idx]])
+                # pick one with highest activation?
+                #idx = acts.index(max(acts))
+                #results.append(self.classifiers.keys()[positives[idx]])
+            if VERBOSE: print "classified as:",results[-1],"\n"
+        return results
+    
+    def loadClassifiers(self):
+        if VERBOSE: print "loading classifiers...",
+        f = file("classifierpickle.txt", "rb")
+        self.classifiers = pickle.load(f)
+        f.close()
+        print "done."
+        
+    def printClassifiers(self):
+        for k,v in self.classifiers.iteritems():
+            print k
+            print "Bias:",v.bias
+            print "Weights:",v.weights[:20]
+            print
 
     def loadFeatures(self):
         for n in ["train", "test"]:
@@ -154,6 +205,10 @@ class Classifier:
                 for wd in vocab:
                     bdata.append(book.vocabulary[wd])
                 
+                # now add punctuation
+                for _,p in book.punctuation.iteritems():
+                    bdata.append(p)
+                
                 # now add bdata to data
                 self.data[n].append(bdata)
                 self.authors[n].append(book.author)
@@ -164,8 +219,16 @@ class Classifier:
         if VERBOSE:
             print "Training:",len(self.data['train'][0])
             print "Testing: ",len(self.data['test'][0]), "\n"
+    
+    def printStats(self):
+        print "stats"
+        # actually do things like vocab histogram or s/t
 
 if __name__ == "__main__":
     c = Classifier()
     c.loadFeatures()
-    c.supervisedLearn()
+    #c.supervisedLearn()
+    c.loadClassifiers()
+    c.printClassifiers()
+    c.testOVA()
+    c.printStats()
